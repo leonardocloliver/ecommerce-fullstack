@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import jwt from 'jsonwebtoken';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, OrderStatus } from '@prisma/client';
 
 dotenv.config();
 
@@ -31,7 +31,7 @@ app.post('/api/auth/register', async (req, res) => {
     // Validação de força de senha (mínimo 6 caracteres)
     if (password.length < 6) {
       return res.status(400).json({ 
-        error: 'A senha deve ter no mínimo 6 caracteres' 
+        error: 'A senha deve ter no mínimo 6 caracteres'
       });
     }
 
@@ -406,6 +406,123 @@ app.get('/api/orders', async (req, res) => {
     });
   }
 });
+
+//obter um pedido específico
+app.get('/api/orders/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    // Buscar pedido pelo id
+    const order = await prisma.order.findUnique({
+      where: { id },
+      include: {
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                description: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      return res.status(404).json({ 
+        error: 'Pedido não encontrado' 
+      });
+    }
+
+    return res.status(200).json(order);
+  } catch (error) {
+    console.error('Erro ao buscar pedido:', error);
+    return res.status(500).json({ 
+      error: 'Erro ao buscar pedido' 
+    });
+  }
+});
+
+//atualizar status do pedido
+app.put('/api/orders/:id', async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { status, userId } = req.body;
+
+    /**
+     * 1. Buscar o pedido
+     */
+    const order = await prisma.order.findUnique({
+      where: { id },
+    });
+
+    if (!order) {
+      return res.status(404).json({
+        error: 'Pedido não encontrado',
+      });
+    }
+
+    /**
+     * 2. Validar userId
+     */
+    if (!userId) {
+      return res.status(400).json({
+        error: 'userId é obrigatório',
+      });
+    }
+
+    /**
+     * 3. Verificar permissão
+     */
+    if (order.userId !== userId) {
+      return res.status(403).json({
+        error: 'Você não tem permissão para atualizar este pedido',
+      });
+    }
+
+    /**
+     * 4. Validar status
+     */
+    if (!status) {
+      return res.status(400).json({
+        error: 'Status é obrigatório',
+      });
+    }
+
+    const allowedStatus = [
+      'PENDING',
+      'CONFIRMED',
+      'SHIPPED',
+      'DELIVERED',
+      'CANCELLED',
+    ];
+
+    if (!allowedStatus.includes(status)) {
+      return res.status(400).json({
+        error: 'Status inválido',
+      });
+    }
+
+    /**
+     * 5. Atualizar pedido
+     */
+    const updatedOrder = await prisma.order.update({
+      where: { id },
+      data: { status },
+    });
+
+    return res.status(200).json(updatedOrder);
+  } catch (error) {
+    console.error('Erro ao atualizar status do pedido:', error);
+    return res.status(500).json({
+      error: 'Erro ao atualizar status do pedido',
+    });
+  }
+});
+
+
 
 //Iniciando o servidor
 if (process.env.NODE_ENV !== 'test') {

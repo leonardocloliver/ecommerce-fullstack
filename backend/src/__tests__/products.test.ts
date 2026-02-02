@@ -8,8 +8,10 @@ const prisma = new PrismaClient();
 
 // Limpar banco antes de cada teste
 beforeEach(async () => {
-  await prisma.product.deleteMany();
-});
+  await prisma.orderItem.deleteMany()
+  await prisma.order.deleteMany()
+  await prisma.product.deleteMany()
+})
 
 // Fechar conexão após todos os testes
 afterAll(async () => {
