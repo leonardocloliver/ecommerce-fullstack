@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 
 import request from 'supertest';
-import app from '../server.js';
+import app from '../app.js';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();

@@ -1,13 +1,17 @@
 /// <reference types="jest" />
 
 import request from 'supertest';
-import app from '../server.js';
+import app from '../app.js';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
 // Limpar banco antes de cada teste
+
 beforeEach(async () => {
+  await prisma.orderItem.deleteMany();
+  await prisma.order.deleteMany();
+  await prisma.product.deleteMany();
   await prisma.user.deleteMany();
 });
 

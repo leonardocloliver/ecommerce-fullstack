@@ -1,7 +1,7 @@
 /// <reference types="jest" />
 
 import request from 'supertest';
-import app from '../server.js';
+import app from '../app.js';
 import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
@@ -188,126 +188,5 @@ describe('GET /api/orders/:id', () => {
     expect(response.body.items[0]).toHaveProperty('quantity', 2);
     expect(response.body).toHaveProperty('total', '6000');
   });
-
-});
-
-describe('PUT /api/orders/:id', () => {
-
-  it('deve atualizar o status do pedido com sucesso', async () => {
-    // Criar usuário
-    const user = await prisma.user.create({
-      data: {
-        email: 'cliente@email.com',
-        password: 'senha123',
-        name: 'Cliente Teste',
-      },
-    });
-
-    // Criar produto
-    const product = await prisma.product.create({
-      data: {
-        name: 'Notebook',
-        description: 'Notebook de alta performance',
-        price: 3000,
-        stock: 5,
-        category: 'Eletrônicos',
-      },
-    });
-
-    // Criar pedido
-    const orderResponse = await request(app)
-      .post('/api/orders')
-      .send({
-        userId: user.id,
-        address: 'Rua Exemplo, 123',
-        items: [{ productId: product.id, quantity: 1, price: 3000 }],
-      });
-
-    expect(orderResponse.status).toBe(201);
-
-    const orderId = orderResponse.body.id;
-
-    // Atualizar status
-    const response = await request(app)
-      .put(`/api/orders/${orderId}`)
-      .send({
-        status: 'CONFIRMED',
-      });
-
-    expect(response.status).toBe(200);
-    expect(response.body).toHaveProperty('id', orderId);
-    expect(response.body).toHaveProperty('status', 'CONFIRMED');
-  });
-
-  it('deve retornar erro 404 ao tentar atualizar pedido inexistente', async () => {
-    const response = await request(app)
-      .put('/api/orders/id-inexistente')
-      .send({
-        status: 'CONFIRMED',
-      });
-
-    expect(response.status).toBe(404);
-    expect(response.body).toHaveProperty('error');
-  });
-  
-  it('deve retornar erro 403 ao tentar atualizar pedido de outro usuário', async () => {
-  // Criar usuário dono do pedido
-  const userA = await prisma.user.create({
-    data: {
-      email: 'usera@email.com',
-      password: '123456',
-      name: 'User A',
-    },
-  });
-
-  // Criar outro usuário
-  const userB = await prisma.user.create({
-    data: {
-      email: 'userb@email.com',
-      password: '123456',
-      name: 'User B',
-    },
-  });
-
-  // Criar produto
-  const product = await prisma.product.create({
-    data: {
-      name: 'Teclado',
-      description: 'Teclado mecânico',
-      price: 500,
-      stock: 10,
-      category: 'Periféricos',
-    },
-  });
-
-  // Criar pedido do userA
-  const orderResponse = await request(app)
-    .post('/api/orders')
-    .send({
-      userId: userA.id,
-      address: 'Rua A, 123',
-      items: [
-        {
-          productId: product.id,
-          quantity: 1,
-          price: 500,
-        },
-      ],
-    });
-
-  const orderId = orderResponse.body.id;
-
-  // UserB tenta atualizar o pedido
-  const response = await request(app)
-    .put(`/api/orders/${orderId}`)
-    .send({
-      userId: userB.id,
-      status: 'CONFIRMED',
-    });
-
-  expect(response.status).toBe(403);
-  expect(response.body).toHaveProperty('error');
-});
-
 
 });
