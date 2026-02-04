@@ -102,22 +102,7 @@ OpenAPI 3.0.0
 
 ---
 
-## 🚀 Próximos Passos
-
-Para completar a documentação:
-
-1. **Documentar rotas de Orders:**
-   ```
-   
-   ```
-
-2. **Adicionar mais detalhes:**
-   - Validações de entrada
-   - Exemplos de erro
-   - Rate limiting
-   - Paginação
-
-3. **Exportar para Postman:**
+## Exportar para Postman:**
    - Usar `/api-docs.json` para importar
 
 ---
