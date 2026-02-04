@@ -6,6 +6,55 @@ import { AppError, asyncHandler } from '../middleware/errorHandler.js';
 const router = Router();
 const prisma = new PrismaClient();
 
+/**
+ * @swagger
+ * /api/auth/register:
+ *   post:
+ *     summary: Registrar novo usuário
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *               - name
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *                 minLength: 6
+ *               name:
+ *                 type: string
+ *           example:
+ *             email: usuario@example.com
+ *             password: senha123
+ *             name: João Silva
+ *     responses:
+ *       201:
+ *         description: Usuário registrado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 userId:
+ *                   type: string
+ *       400:
+ *         description: Erro de validação
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.post('/register', asyncHandler(async (req, res) => {
   const { email, password, name } = req.body;
 
@@ -49,6 +98,52 @@ router.post('/register', asyncHandler(async (req, res) => {
   });
 }));
 
+/**
+ * @swagger
+ * /api/auth/login:
+ *   post:
+ *     summary: Fazer login
+ *     tags: [Auth]
+ *     security: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - password
+ *             properties:
+ *               email:
+ *                 type: string
+ *                 format: email
+ *               password:
+ *                 type: string
+ *           example:
+ *             email: usuario@example.com
+ *             password: senha123
+ *     responses:
+ *       200:
+ *         description: Login bem-sucedido
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 message:
+ *                   type: string
+ *                 token:
+ *                   type: string
+ *                 user:
+ *                   $ref: '#/components/schemas/User'
+ *       401:
+ *         description: Credenciais inválidas
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 router.post('/login', asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 

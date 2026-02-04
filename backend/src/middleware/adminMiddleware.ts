@@ -6,9 +6,9 @@ import { PrismaClient } from '@prisma/client';
 const prisma = new PrismaClient();
 
 /**
- * Middleware de autorização para ADMIN
- * Verifica se o usuário tem role ADMIN
- * Deve ser usado DEPOIS de authMiddleware
+  Middleware de autorização para ADMIN
+  Verifica se o usuário tem role ADMIN
+  Deve ser usado DEPOIS de authMiddleware
  */
 export const adminMiddleware = async (
   req: Request,
@@ -22,7 +22,7 @@ export const adminMiddleware = async (
       throw new AppError(401, 'Usuário não autenticado');
     }
 
-    // Buscar usuário para verificar role
+    //Buscar usuário para verificar role
     const user = await prisma.user.findUnique({
       where: { id: userId },
       select: { role: true },
@@ -32,7 +32,7 @@ export const adminMiddleware = async (
       throw new AppError(404, 'Usuário não encontrado');
     }
 
-    // Verificar se é ADMIN
+    //Verificar se é ADMIN
     if (user.role !== 'ADMIN') {
       throw new AppError(
         403,

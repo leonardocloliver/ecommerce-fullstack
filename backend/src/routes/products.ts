@@ -7,6 +7,23 @@ import { AppError, asyncHandler } from '../middleware/errorHandler.js';
 const router = Router();
 const prisma = new PrismaClient();
 
+/**
+ * @swagger
+ * /api/products:
+ *   get:
+ *     summary: Listar todos os produtos
+ *     tags: [Products]
+ *     security: []
+ *     responses:
+ *       200:
+ *         description: Lista de produtos
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: array
+ *               items:
+ *                 $ref: '#/components/schemas/Product'
+ */
 // Listar todos os produtos
 router.get('/', asyncHandler(async (req, res) => {
   const products = await prisma.product.findMany({
@@ -25,6 +42,34 @@ router.get('/', asyncHandler(async (req, res) => {
   return res.status(200).json(products);
 }));
 
+/**
+ * @swagger
+ * /api/products/{id}:
+ *   get:
+ *     summary: Obter um produto por ID
+ *     tags: [Products]
+ *     security: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID do produto
+ *     responses:
+ *       200:
+ *         description: Produto encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Product'
+ *       404:
+ *         description: Produto não encontrado
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Obter um produto específico
 router.get('/:id', asyncHandler(async (req, res) => {
   const id = (req.params.id ?? '') as string;
@@ -53,6 +98,61 @@ router.get('/:id', asyncHandler(async (req, res) => {
   return res.status(200).json(product);
 }));
 
+/**
+ * @swagger
+ * /api/products:
+ *   post:
+ *     summary: Criar um novo produto (apenas ADMIN)
+ *     tags: [Products]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - name
+ *               - description
+ *               - price
+ *               - stock
+ *               - category
+ *             properties:
+ *               name:
+ *                 type: string
+ *               description:
+ *                 type: string
+ *               price:
+ *                 type: number
+ *                 format: decimal
+ *               stock:
+ *                 type: integer
+ *               category:
+ *                 type: string
+ *               imageUrl:
+ *                 type: string
+ *                 format: url
+ *           example:
+ *             name: Notebook Dell
+ *             description: Notebook para desenvolvimento
+ *             price: 3500.00
+ *             stock: 10
+ *             category: Eletrônicos
+ *     responses:
+ *       201:
+ *         description: Produto criado com sucesso
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Product'
+ *       403:
+ *         description: Sem permissão (requer ADMIN)
+ *         content:
+ *           application/json:
+ *             schema:
+ *               $ref: '#/components/schemas/Error'
+ */
 // Criar um novo produto (apenas ADMIN)
 router.post('/', authMiddleware, adminMiddleware, asyncHandler(async (req, res) => {
   const { name, description, price, stock, category, imageUrl } = req.body;

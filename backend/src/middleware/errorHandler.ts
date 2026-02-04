@@ -30,8 +30,11 @@ export const errorHandler = (
 
   //Se for erro de Prisma (banco de dados)
   if (err.name === 'PrismaClientKnownRequestError') {
+    console.error('Erro Prisma:', err);
     return res.status(400).json({
-      error: 'Erro ao acessar o banco de dados',
+      error: process.env.NODE_ENV === 'development' 
+        ? `Erro no banco: ${err.message}` 
+        : 'Erro ao acessar o banco de dados',
       statusCode: 400,
     });
   }
@@ -39,7 +42,9 @@ export const errorHandler = (
   //Erros não previstos - log para debug
   console.error('Erro não tratado:', err);
   return res.status(500).json({
-    error: 'Erro interno do servidor',
+    error: process.env.NODE_ENV === 'development'
+      ? err.message
+      : 'Erro interno do servidor',
     statusCode: 500,
   });
 };
