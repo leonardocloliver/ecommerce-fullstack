@@ -102,6 +102,7 @@ describe('POST /api/products', () => {
         email: 'admin@email.com',
         password: 'admin123',
         name: 'Admin',
+        role: 'ADMIN',
       },
     });
 
@@ -131,6 +132,7 @@ describe('POST /api/products', () => {
         email: 'admin@email.com',
         password: 'admin123',
         name: 'Admin',
+        role: 'ADMIN',
       },
     });
 
@@ -154,6 +156,7 @@ describe('POST /api/products', () => {
         email: 'admin@email.com',
         password: 'admin123',
         name: 'Admin',
+        role: 'ADMIN',
       },
     });
 
@@ -194,6 +197,7 @@ describe('PUT /api/products/:id', () => {
         email: 'admin@email.com',
         password: 'admin123',
         name: 'Admin',
+        role: 'ADMIN',
       },
     });
 
@@ -224,6 +228,7 @@ describe('PUT /api/products/:id', () => {
         email: 'admin@email.com',
         password: 'admin123',
         name: 'Admin',
+        role: 'ADMIN',
       },
     });
 
@@ -261,6 +266,7 @@ describe('DELETE /api/products/:id', () => {
         email: 'admin@email.com',
         password: 'admin123',
         name: 'Admin',
+        role: 'ADMIN',
       },
     });
 
@@ -288,6 +294,7 @@ describe('DELETE /api/products/:id', () => {
         email: 'admin@email.com',
         password: 'admin123',
         name: 'Admin',
+        role: 'ADMIN',
       },
     });
 

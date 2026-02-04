@@ -16,6 +16,11 @@ app.get('/', (req, res) => {
   res.json({ message: 'API rodando' });
 });
 
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+  res.status(200).json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
 // Rotas
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productsRoutes);

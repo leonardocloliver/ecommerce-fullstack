@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { authMiddleware } from '../middleware/auth.js';
+import { adminMiddleware } from '../middleware/adminMiddleware.js';
 import { AppError, asyncHandler } from '../middleware/errorHandler.js';
 
 const router = Router();
@@ -52,8 +53,8 @@ router.get('/:id', asyncHandler(async (req, res) => {
   return res.status(200).json(product);
 }));
 
-// Criar um novo produto
-router.post('/', authMiddleware, asyncHandler(async (req, res) => {
+// Criar um novo produto (apenas ADMIN)
+router.post('/', authMiddleware, adminMiddleware, asyncHandler(async (req, res) => {
   const { name, description, price, stock, category, imageUrl } = req.body;
 
   // Validação de campos obrigatórios
@@ -87,7 +88,7 @@ router.post('/', authMiddleware, asyncHandler(async (req, res) => {
 }));
 
 // Atualizar um produto
-router.put('/:id', authMiddleware, asyncHandler(async (req, res) => {
+router.put('/:id', authMiddleware, adminMiddleware, asyncHandler(async (req, res) => {
   const id = (req.params.id ?? '') as string;
   if (!id) {
     throw new AppError(400, 'ID é obrigatório');
@@ -128,8 +129,8 @@ router.put('/:id', authMiddleware, asyncHandler(async (req, res) => {
   return res.status(200).json(updatedProduct);
 }));
 
-// Deletar um produto
-router.delete('/:id', authMiddleware, asyncHandler(async (req, res) => {
+// Deletar um produto (apenas ADMIN)
+router.delete('/:id', authMiddleware, adminMiddleware, asyncHandler(async (req, res) => {
   const id = (req.params.id ?? '') as string;
   if (!id) {
     throw new AppError(400, 'ID é obrigatório');
