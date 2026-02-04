@@ -3,8 +3,15 @@
 import request from 'supertest';
 import app from '../app.js';
 import { PrismaClient } from '@prisma/client';
+import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
+
+// Helper para gerar token JWT
+function generateToken(userId: string): string {
+  const secret = process.env.JWT_SECRET || 'your-secret-key';
+  return jwt.sign({ id: userId }, secret, { expiresIn: '1h' });
+}
 
 beforeEach(async () => {
   await prisma.orderItem.deleteMany();
@@ -41,10 +48,11 @@ describe('PUT /api/orders/:id', () => {
     });
 
     // Criar pedido
+    const token = generateToken(user.id);
     const orderResponse = await request(app)
       .post('/api/orders')
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         address: 'Rua Exemplo, 123',
         items: [{ productId: product.id, quantity: 1, price: 3000 }],
       });
@@ -56,8 +64,8 @@ describe('PUT /api/orders/:id', () => {
     // Atualizar status
     const response = await request(app)
       .put(`/api/orders/${orderId}`)
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         status: 'CONFIRMED',
       });
 
@@ -67,8 +75,18 @@ describe('PUT /api/orders/:id', () => {
   });
 
   it('deve retornar erro 404 ao tentar atualizar pedido inexistente', async () => {
+    const user = await prisma.user.create({
+      data: {
+        email: 'test@email.com',
+        password: '123456',
+        name: 'Test User',
+      },
+    });
+    
+    const token = generateToken(user.id);
     const response = await request(app)
       .put('/api/orders/id-inexistente')
+      .set('Authorization', `Bearer ${token}`)
       .send({
         status: 'CONFIRMED',
       });
@@ -109,10 +127,11 @@ describe('PUT /api/orders/:id', () => {
     });
 
     // Criar pedido do userA
+    const tokenA = generateToken(userA.id);
     const orderResponse = await request(app)
       .post('/api/orders')
+      .set('Authorization', `Bearer ${tokenA}`)
       .send({
-        userId: userA.id,
         address: 'Rua A, 123',
         items: [
           {
@@ -126,10 +145,11 @@ describe('PUT /api/orders/:id', () => {
     const orderId = orderResponse.body.id;
 
     // UserB tenta atualizar o pedido
+    const tokenB = generateToken(userB.id);
     const response = await request(app)
       .put(`/api/orders/${orderId}`)
+      .set('Authorization', `Bearer ${tokenB}`)
       .send({
-        userId: userB.id,
         status: 'CONFIRMED',
       });
 
@@ -160,10 +180,11 @@ describe('PUT /api/orders/:id', () => {
     });
 
     // Criar pedido
+    const token = generateToken(user.id);
     const orderResponse = await request(app)
       .post('/api/orders')
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         address: 'Rua Exemplo, 123',
         items: [{ productId: product.id, quantity: 1, price: 3000 }],
       });
@@ -173,8 +194,8 @@ describe('PUT /api/orders/:id', () => {
     //Tentar pular de PENDING para DELIVERED (pulando CONFIRMED e SHIPPED)
     const response = await request(app)
       .put(`/api/orders/${orderId}`)
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         status: 'DELIVERED',
       });
 
@@ -206,10 +227,11 @@ describe('PUT /api/orders/:id', () => {
     });
 
     //Criar pedido
+    const token = generateToken(user.id);
     const orderResponse = await request(app)
       .post('/api/orders')
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         address: 'Rua Exemplo, 123',
         items: [{ productId: product.id, quantity: 1, price: 3000 }],
       });
@@ -219,8 +241,8 @@ describe('PUT /api/orders/:id', () => {
     //Cancelar pedido direto do PENDING (sem passar por CONFIRMED)
     const response = await request(app)
       .put(`/api/orders/${orderId}`)
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         status: 'CANCELLED',
       });
 

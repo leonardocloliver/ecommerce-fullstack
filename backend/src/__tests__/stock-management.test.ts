@@ -3,8 +3,15 @@
 import request from 'supertest';
 import app from '../app.js';
 import { PrismaClient } from '@prisma/client';
+import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
+
+// Helper para gerar token JWT
+function generateToken(userId: string): string {
+  const secret = process.env.JWT_SECRET || 'your-secret-key';
+  return jwt.sign({ id: userId }, secret, { expiresIn: '1h' });
+}
 
 beforeEach(async () => {
   await prisma.orderItem.deleteMany();
@@ -41,10 +48,11 @@ describe('Stock Management', () => {
     });
 
     // Tentar criar pedido com mais itens do que stock disponível
+    const token = generateToken(user.id);
     const response = await request(app)
       .post('/api/orders')
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         address: 'Rua Exemplo, 123',
         items: [
           {
@@ -84,10 +92,11 @@ describe('Stock Management', () => {
     });
 
     // Criar pedido válido
+    const token = generateToken(user.id);
     const response = await request(app)
       .post('/api/orders')
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         address: 'Rua Exemplo, 123',
         items: [
           {
@@ -130,10 +139,11 @@ describe('Stock Management', () => {
     });
 
     // Criar pedido
+    const token = generateToken(user.id);
     const orderResponse = await request(app)
       .post('/api/orders')
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         address: 'Rua Exemplo, 123',
         items: [
           {
@@ -149,8 +159,8 @@ describe('Stock Management', () => {
     // Confirmar pedido
     const confirmResponse = await request(app)
       .put(`/api/orders/${orderId}`)
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         status: 'CONFIRMED',
       });
 
@@ -185,10 +195,11 @@ describe('Stock Management', () => {
     });
 
     // Criar pedido
+    const token = generateToken(user.id);
     const orderResponse = await request(app)
       .post('/api/orders')
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         address: 'Rua Exemplo, 123',
         items: [
           {
@@ -204,8 +215,8 @@ describe('Stock Management', () => {
     // Confirmar pedido
     await request(app)
       .put(`/api/orders/${orderId}`)
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         status: 'CONFIRMED',
       });
 
@@ -218,8 +229,8 @@ describe('Stock Management', () => {
     // Cancelar pedido
     await request(app)
       .put(`/api/orders/${orderId}`)
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         status: 'CANCELLED',
       });
 
@@ -241,10 +252,11 @@ describe('Stock Management', () => {
     });
 
     // Tentar criar pedido com produto inexistente
+    const token = generateToken(user.id);
     const response = await request(app)
       .post('/api/orders')
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         address: 'Rua Exemplo, 123',
         items: [
           {

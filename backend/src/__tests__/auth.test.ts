@@ -1,4 +1,4 @@
-/// <reference types="jest" />
+///<reference types="jest" />
 
 import request from 'supertest';
 import app from '../app.js';
@@ -6,7 +6,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-// Limpar banco antes de cada teste
+//Limpar banco antes de cada teste
 
 beforeEach(async () => {
   await prisma.orderItem.deleteMany();
@@ -15,7 +15,7 @@ beforeEach(async () => {
   await prisma.user.deleteMany();
 });
 
-// Fechar conexão após todos os testes
+//Fechar conexão após todos os testes
 afterAll(async () => {
   await prisma.$disconnect();
 });
@@ -39,7 +39,7 @@ describe('POST /api/auth/register', () => {
   });
 
   it('deve retornar erro se email já existir', async () => {
-    // Criar primeiro usuário
+    //Criar primeiro usuário
     await request(app)
       .post('/api/auth/register')
       .send({
@@ -48,7 +48,7 @@ describe('POST /api/auth/register', () => {
         name: 'Maria',
       });
 
-    // Tentar criar outro com mesmo email
+    //Tentar criar outro com mesmo email
     const response = await request(app)
       .post('/api/auth/register')
       .send({
@@ -66,7 +66,7 @@ describe('POST /api/auth/register', () => {
       .post('/api/auth/register')
       .send({
         email: 'teste@email.com',
-        // Faltando password e name
+        //Faltando password e name
       });
 
     expect(response.status).toBe(400);
@@ -78,7 +78,7 @@ describe('POST /api/auth/register', () => {
       .post('/api/auth/register')
       .send({
         email: 'teste@email.com',
-        password: '123',  // Senha muito curta
+        password: '123',  //Senha muito curta
         name: 'Maria Teste',
       });
 
@@ -90,7 +90,7 @@ describe('POST /api/auth/register', () => {
 describe('POST /api/auth/login', () => {
   
   beforeEach(async () => {
-    // Criar um usuário para os testes de login
+    //Criar um usuário para os testes de login
     await request(app)
       .post('/api/auth/register')
       .send({

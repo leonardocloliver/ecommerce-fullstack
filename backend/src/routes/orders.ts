@@ -1,13 +1,15 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
+import { authMiddleware } from '../middleware/auth.js';
 
 const router = Router();
 const prisma = new PrismaClient();
 
 // Criar um novo pedido
-router.post('/', async (req, res) => {
+router.post('/', authMiddleware, async (req, res) => {
   try {
-    const { userId, address, items } = req.body;
+    const userId = req.userId;  // Vem do middleware
+    const { address, items } = req.body;
 
     // Validação de campos obrigatórios
     if (!userId || !address || !items || items.length === 0) {
@@ -82,20 +84,13 @@ router.post('/', async (req, res) => {
 });
 
 // Listar pedidos do usuário
-router.get('/', async (req, res) => {
+router.get('/', authMiddleware, async (req, res) => {
   try {
-    const { userId } = req.query;
-
-    // Validação
-    if (!userId) {
-      return res.status(400).json({ 
-        error: 'userId é obrigatório' 
-      });
-    }
+    const userId = req.userId;  // Vem do middleware
 
     // Buscar pedidos do usuário
     const orders = await prisma.order.findMany({
-      where: { userId: userId as string },
+      where: { userId },  // userId agora é string direto
       include: {
         items: {
           include: {
@@ -159,10 +154,11 @@ router.get('/:id', async (req, res) => {
 });
 
 // Atualizar status do pedido
-router.put('/:id', async (req, res) => {
+router.put('/:id', authMiddleware, async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, userId } = req.body;
+    const userId = req.userId;  // Vem do middleware
+    const { status } = req.body;
 
     // Buscar o pedido
     const order = await prisma.order.findUnique({
@@ -175,12 +171,8 @@ router.put('/:id', async (req, res) => {
       });
     }
 
-    // Validar userId
-    if (!userId) {
-      return res.status(400).json({
-        error: 'userId é obrigatório',
-      });
-    }
+    // Validar userId (não precisa mais pois vem do token)
+    // Se o usuário está autenticado, userId já está no request
 
     // Verificar permissão
     if (order.userId !== userId) {

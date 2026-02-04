@@ -3,8 +3,15 @@
 import request from 'supertest';
 import app from '../app.js';
 import { PrismaClient } from '@prisma/client';
+import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
+
+// Helper para gerar token JWT
+function generateToken(userId: string): string {
+  const secret = process.env.JWT_SECRET || 'your-secret-key';
+  return jwt.sign({ id: userId }, secret, { expiresIn: '1h' });
+}
 
 beforeEach(async () => {
   await prisma.orderItem.deleteMany();
@@ -42,10 +49,11 @@ describe('POST /api/orders', () => {
     });
 
     //Criar um pedido
+    const token = generateToken(user.id);
     const response = await request(app)
       .post('/api/orders')
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         address: 'Rua Exemplo, 123 - São Paulo, SP',
         items: [
           {
@@ -100,25 +108,28 @@ describe('GET /api/orders', () => {
     });
 
     //Criar pedidos para o usuário
+    const token = generateToken(user.id);
+    
     await request(app)
       .post('/api/orders')
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         address: 'Rua 1, 123',
         items: [{ productId: product1.id, quantity: 1, price: 3000.00 }],
       });
 
     await request(app)
       .post('/api/orders')
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         address: 'Rua 2, 456',
         items: [{ productId: product2.id, quantity: 2, price: 150.00 }],
       });
 
     //Buscar pedidos do usuário
     const response = await request(app)
-      .get(`/api/orders?userId=${user.id}`);
+      .get(`/api/orders`)
+      .set('Authorization', `Bearer ${token}`);
 
     expect(response.status).toBe(200);
     expect(Array.isArray(response.body)).toBe(true);
@@ -153,10 +164,11 @@ describe('GET /api/orders/:id', () => {
     });
 
     // 3. Criar pedido
+    const token = generateToken(user.id);
     const createResponse = await request(app)
       .post('/api/orders')
+      .set('Authorization', `Bearer ${token}`)
       .send({
-        userId: user.id,
         address: 'Rua Exemplo, 123',
         items: [
           {
@@ -173,7 +185,8 @@ describe('GET /api/orders/:id', () => {
 
     //Buscar pedido pelo id
     const response = await request(app)
-      .get(`/api/orders/${orderId}`);
+      .get(`/api/orders/${orderId}`)
+      .set('Authorization', `Bearer ${token}`);
 
     //Validações
     expect(response.status).toBe(200);
