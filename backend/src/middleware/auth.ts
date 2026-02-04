@@ -1,7 +1,7 @@
 import jwt from 'jsonwebtoken';
 import type { Request, Response, NextFunction } from 'express';
 
-// Estender tipo do Request para incluir userId
+//Estender tipo do Request para incluir userId
 declare global {
   namespace Express {
     interface Request {
@@ -33,7 +33,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
       });
     }
 
-    const token = parts[1];
+    const token = parts[1]!;  //Garantido que existe após split length check
 
     //Verifica se o token é válido
     const decoded = jwt.verify(

@@ -3,14 +3,22 @@
 import request from 'supertest';
 import app from '../app.js';
 import { PrismaClient } from '@prisma/client';
+import jwt from 'jsonwebtoken';
 
 const prisma = new PrismaClient();
+
+//Helper para gerar token JWT
+function generateToken(userId: string): string {
+  const secret = process.env.JWT_SECRET || 'your-secret-key';
+  return jwt.sign({ id: userId }, secret, { expiresIn: '1h' });
+}
 
 // Limpar banco antes de cada teste
 beforeEach(async () => {
   await prisma.orderItem.deleteMany()
   await prisma.order.deleteMany()
   await prisma.product.deleteMany()
+  await prisma.user.deleteMany()
 })
 
 // Fechar conexão após todos os testes
@@ -88,8 +96,19 @@ describe('GET /api/products/:id', () => {
 describe('POST /api/products', () => {
   
   it('deve criar um novo produto com sucesso', async () => {
+    // Criar usuário para gerar token
+    const user = await prisma.user.create({
+      data: {
+        email: 'admin@email.com',
+        password: 'admin123',
+        name: 'Admin',
+      },
+    });
+
+    const token = generateToken(user.id);
     const response = await request(app)
       .post('/api/products')
+      .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'Novo Produto',
         description: 'Descrição do novo produto',
@@ -106,8 +125,19 @@ describe('POST /api/products', () => {
   });
 
   it('deve retornar erro se faltar campos obrigatórios', async () => {
+    // Criar usuário para gerar token
+    const user = await prisma.user.create({
+      data: {
+        email: 'admin@email.com',
+        password: 'admin123',
+        name: 'Admin',
+      },
+    });
+
+    const token = generateToken(user.id);
     const response = await request(app)
       .post('/api/products')
+      .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'Produto Incompleto',
         // Faltando description, price, stock, category
@@ -118,8 +148,19 @@ describe('POST /api/products', () => {
   });
 
   it('deve retornar erro se preço for negativo', async () => {
+    // Criar usuário para gerar token
+    const user = await prisma.user.create({
+      data: {
+        email: 'admin@email.com',
+        password: 'admin123',
+        name: 'Admin',
+      },
+    });
+
+    const token = generateToken(user.id);
     const response = await request(app)
       .post('/api/products')
+      .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'Produto',
         description: 'Descrição',
@@ -147,9 +188,21 @@ describe('PUT /api/products/:id', () => {
       },
     });
 
+    // Criar usuário para gerar token
+    const user = await prisma.user.create({
+      data: {
+        email: 'admin@email.com',
+        password: 'admin123',
+        name: 'Admin',
+      },
+    });
+
+    const token = generateToken(user.id);
+
     // Atualizar
     const response = await request(app)
       .put(`/api/products/${product.id}`)
+      .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'Produto Atualizado',
         description: 'Descrição Atualizada',
@@ -165,8 +218,19 @@ describe('PUT /api/products/:id', () => {
   });
 
   it('deve retornar erro 404 ao atualizar produto inexistente', async () => {
+    // Criar usuário para gerar token
+    const user = await prisma.user.create({
+      data: {
+        email: 'admin@email.com',
+        password: 'admin123',
+        name: 'Admin',
+      },
+    });
+
+    const token = generateToken(user.id);
     const response = await request(app)
       .put('/api/products/id-inexistente')
+      .set('Authorization', `Bearer ${token}`)
       .send({
         name: 'Produto',
         price: 100,
@@ -191,9 +255,21 @@ describe('DELETE /api/products/:id', () => {
       },
     });
 
+    // Criar usuário para gerar token
+    const user = await prisma.user.create({
+      data: {
+        email: 'admin@email.com',
+        password: 'admin123',
+        name: 'Admin',
+      },
+    });
+
+    const token = generateToken(user.id);
+
     // Deletar
     const response = await request(app)
-      .delete(`/api/products/${product.id}`);
+      .delete(`/api/products/${product.id}`)
+      .set('Authorization', `Bearer ${token}`);
 
     expect(response.status).toBe(200);
     expect(response.body).toHaveProperty('message', 'Produto deletado com sucesso');
@@ -206,8 +282,19 @@ describe('DELETE /api/products/:id', () => {
   });
 
   it('deve retornar erro 404 ao deletar produto inexistente', async () => {
+    // Criar usuário para gerar token
+    const user = await prisma.user.create({
+      data: {
+        email: 'admin@email.com',
+        password: 'admin123',
+        name: 'Admin',
+      },
+    });
+
+    const token = generateToken(user.id);
     const response = await request(app)
-      .delete('/api/products/id-inexistente');
+      .delete('/api/products/id-inexistente')
+      .set('Authorization', `Bearer ${token}`);
 
     expect(response.status).toBe(404);
     expect(response.body).toHaveProperty('error');

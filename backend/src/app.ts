@@ -3,6 +3,7 @@ import cors from 'cors';
 import authRoutes from './routes/auth.js';
 import productsRoutes from './routes/products.js';
 import ordersRoutes from './routes/orders.js';
+import { errorHandler } from './middleware/errorHandler.js';
 
 const app = express();
 
@@ -19,5 +20,8 @@ app.get('/', (req, res) => {
 app.use('/api/auth', authRoutes);
 app.use('/api/products', productsRoutes);
 app.use('/api/orders', ordersRoutes);
+
+// Error Handler (DEVE ser sempre o último)
+app.use(errorHandler);
 
 export default app;
