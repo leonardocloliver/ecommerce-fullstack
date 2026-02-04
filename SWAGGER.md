@@ -1,9 +1,5 @@
 # 📚 Swagger/OpenAPI - Documentação da API
 
-## ✅ Configurado com Sucesso!
-
-A documentação interativa da API está **pronta e funcionando**!
-
 ### 🔗 Acessar Documentação
 
 ```
@@ -23,10 +19,13 @@ http://localhost:3000/api-docs
 - `GET /api/products/{id}` - Obter produto por ID
 - `POST /api/products` - Criar produto (apenas ADMIN)
 
-### 📝 Documentação Parcial (primeiras 3 rotas)
+### 📝 Documentação Parcial
 - `PUT /api/products/{id}` - Atualizar produto (apenas ADMIN)
 - `DELETE /api/products/{id}` - Deletar produto (apenas ADMIN)
-- Rotas de Orders
+- `POST /api/orders` - Criar novo pedido
+- `GET /api/orders`  - Listar pedidos do usuário autenticado
+- `GET /api/orders/{id}` - Obter Detalhes de um pedido
+- `PATCH /api/orders/{id}/status` - Atualizar status do pedido
 
 ---
 
@@ -64,18 +63,6 @@ http://localhost:3000/api-docs
 ### 4️⃣ **Ver Resposta**
 - Response body aparece abaixo
 - Ver status code, headers, etc
-
----
-
-## 🔧 Arquivos Criados/Modificados
-
-| Arquivo | Mudança |
-|---------|---------|
-| `src/config/swagger.ts` | ✨ Nova - Configuração OpenAPI |
-| `src/app.ts` | 🔧 Adicionado `swaggerUi` middleware |
-| `src/routes/auth.ts` | 📚 Documentação JSDoc adicionada |
-| `src/routes/products.ts` | 📚 Documentação JSDoc adicionada |
-| `package.json` | ➕ `swagger-ui-express` + tipos |
 
 ---
 
@@ -121,10 +108,7 @@ Para completar a documentação:
 
 1. **Documentar rotas de Orders:**
    ```
-   POST /api/orders
-   GET /api/orders
-   GET /api/orders/{id}
-   PATCH /api/orders/{id}/status
+   
    ```
 
 2. **Adicionar mais detalhes:**
@@ -143,13 +127,3 @@ Para completar a documentação:
 ```
 http://localhost:3000/api-docs.json
 ```
-
-Útil para:
-- Importar no Postman
-- Usar em ferramentas de teste
-- Compartilhar com o time
-- Gerar clientes SDK automaticamente
-
----
-
-**Status:** ✅ Pronto para usar! 🎉
