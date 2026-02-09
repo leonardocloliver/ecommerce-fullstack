@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import jwt from 'jsonwebtoken';
+import bcrypt from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
 import { AppError, asyncHandler } from '../middleware/errorHandler.js';
 
@@ -77,11 +78,12 @@ router.post('/register', asyncHandler(async (req, res) => {
     throw new AppError(400, 'Email já cadastrado');
   }
 
-  //Criar novo usuário
+  //Criar novo usuário com senha hasheada
+  const hashedPassword = await bcrypt.hash(password, 10);
   const user = await prisma.user.create({
     data: {
       email,
-      password,
+      password: hashedPassword,
       name,
     },
     select: {
@@ -158,7 +160,8 @@ router.post('/login', asyncHandler(async (req, res) => {
   });
 
   //Verificar se usuário existe e se a senha é correta
-  if (!user || user.password !== password) {
+  const isValidPassword = user && await bcrypt.compare(password, user.password);
+  if (!user || !isValidPassword) {
     throw new AppError(401, 'Email ou senha inválidos');
   }
 
