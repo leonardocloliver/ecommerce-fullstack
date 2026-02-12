@@ -5,11 +5,7 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-/**
-  Middleware de autorização para ADMIN
-  Verifica se o usuário tem role ADMIN
-  Deve ser usado DEPOIS de authMiddleware
- */
+//Middleware de autorização para ADMIN
 export const adminMiddleware = async (
   req: Request,
   res: Response,

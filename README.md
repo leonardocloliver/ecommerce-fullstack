@@ -10,7 +10,7 @@ Aplicação fullstack de e-commerce construída do zero com fins de **aprendizad
 
 | Vitrine de Produtos | Carrinho | Painel Admin |
 |:---:|:---:|:---:|
-| Listagem com busca e filtro | Checkout com endereço salvo | Dashboard + gestão de pedidos |
+| Listagem com busca | Checkout com endereço salvo | Dashboard + gestão de pedidos |
 
 ---
 
@@ -72,7 +72,7 @@ ecommerce-fullstack/
 
 ### Cliente
 - ✅ Cadastro e login com JWT
-- ✅ Vitrine de produtos com busca por nome, descrição e categoria
+- ✅ Vitrine de produtos com busca por nome
 - ✅ Carrinho de compras persistente (localStorage por usuário)
 - ✅ Merge automático do carrinho guest → usuário logado
 - ✅ Checkout com endereço salvo no perfil
