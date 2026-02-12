@@ -97,7 +97,7 @@ export default function Home() {
         <div className="header-left">
           <Link to="/" className="logo">
             <div className="logo-icon">🛒</div>
-            <span className="logo-text">ShopHub</span>
+            <span className="logo-text">Ecommerce</span>
           </Link>
         </div>
 

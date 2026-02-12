@@ -1,4 +1,4 @@
-# 🛒 ShopHub — E-Commerce Fullstack
+# 🛒 Ecommerce — Fullstack
 
 Aplicação fullstack de e-commerce construída do zero com fins de **aprendizado e portfólio**. O projeto abrange desde a modelagem do banco de dados até a interface do usuário, passando por autenticação, carrinho de compras, gerenciamento de pedidos e painel administrativo.
 
