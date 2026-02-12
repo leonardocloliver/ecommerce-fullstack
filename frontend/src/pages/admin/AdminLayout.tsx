@@ -1,12 +1,15 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../contexts/AuthContext';
+import { useCart } from '../../contexts/CartContext';
 import './Admin.css';
 
 export default function AdminLayout() {
   const { user, logout } = useAuth();
+  const { clearCart } = useCart();
   const navigate = useNavigate();
 
   const handleLogout = () => {
+    clearCart();
     logout();
     navigate('/');
   };

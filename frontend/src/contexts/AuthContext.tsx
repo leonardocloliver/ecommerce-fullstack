@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { authService } from '../services/auth';
-import type { User, LoginData, RegisterData } from '../services/auth';
+import type { User, LoginData, RegisterData, UpdateProfileData } from '../services/auth';
 
 interface AuthContextType {
   user: User | null;
@@ -9,6 +9,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (data: LoginData) => Promise<void>;
   register: (data: RegisterData) => Promise<void>;
+  updateProfile: (data: UpdateProfileData) => Promise<void>;
   logout: () => void;
 }
 
@@ -41,6 +42,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(response.user);
   };
 
+  const updateProfile = async (data: UpdateProfileData) => {
+    const updatedUser = await authService.updateProfile(data);
+    authService.saveUser(updatedUser);
+    setUser(updatedUser);
+  };
+
   const logout = () => {
     authService.logout();
     setUser(null);
@@ -54,6 +61,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         isLoading,
         login,
         register,
+        updateProfile,
         logout,
       }}
     >

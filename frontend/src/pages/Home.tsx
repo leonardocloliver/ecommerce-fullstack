@@ -1,15 +1,21 @@
-import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
+import { useCart } from '../contexts/CartContext';
 import { productService } from '../services/products';
 import type { Product } from '../services/products';
 import './Home.css';
 
 export default function Home() {
   const { user, isAuthenticated, logout } = useAuth();
+  const { addItem, totalItems, clearCart } = useCart();
+  const navigate = useNavigate();
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
+  const userMenuRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     loadProducts();
@@ -42,6 +48,49 @@ export default function Home() {
       .slice(0, 2);
   };
 
+  const handleAddToCart = (product: Product) => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    addItem(product);
+  };
+
+  const handleLogout = () => {
+    clearCart();
+    logout();
+  };
+
+  useEffect(() => {
+    const handleOutsideClick = (event: MouseEvent) => {
+      if (!userMenuRef.current) {
+        return;
+      }
+
+      if (!userMenuRef.current.contains(event.target as Node)) {
+        setIsUserMenuOpen(false);
+      }
+    };
+
+    if (isUserMenuOpen) {
+      document.addEventListener('mousedown', handleOutsideClick);
+    }
+
+    return () => {
+      document.removeEventListener('mousedown', handleOutsideClick);
+    };
+  }, [isUserMenuOpen]);
+
+  const filteredProducts = products.filter((product) => {
+    if (!searchTerm.trim()) return true;
+    const term = searchTerm.toLowerCase();
+    return (
+      product.name.toLowerCase().includes(term) ||
+      product.description.toLowerCase().includes(term) ||
+      product.category.toLowerCase().includes(term)
+    );
+  });
+
   return (
     <div className="home-container">
       <header className="home-header">
@@ -55,11 +104,23 @@ export default function Home() {
         <div className="header-center">
           <div className="search-bar">
             <span className="search-icon">🔍</span>
-            <input type="text" placeholder="Buscar produtos..." />
+            <input
+              type="text"
+              placeholder="Buscar produtos..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
         </div>
         
         <nav className="header-right">
+          {user?.role !== 'ADMIN' && (
+            <Link to="/cart" className="header-btn cart-btn">
+              <span>🛒</span>
+              <span>Carrinho</span>
+              {totalItems > 0 && <span className="cart-badge">{totalItems}</span>}
+            </Link>
+          )}
           {isAuthenticated ? (
             <>
               {user?.role === 'ADMIN' && (
@@ -68,19 +129,46 @@ export default function Home() {
                   <span>Admin</span>
                 </Link>
               )}
-              <Link to="/orders" className="header-btn">
-                <span>📦</span>
-                <span>Pedidos</span>
-              </Link>
               <div className="header-divider"></div>
-              <div className="user-menu">
-                <div className="avatar">{user?.name ? getInitials(user.name) : '?'}</div>
-                <div className="user-details">
-                  <span className="user-name">{user?.name?.split(' ')[0]}</span>
-                  {user?.role === 'ADMIN' && <span className="user-role">Admin</span>}
-                </div>
+              <div className="user-menu-wrapper" ref={userMenuRef}>
+                <button
+                  className={`user-menu ${isUserMenuOpen ? 'open' : ''}`}
+                  onClick={() => setIsUserMenuOpen((prev) => !prev)}
+                  type="button"
+                  aria-haspopup="menu"
+                  aria-expanded={isUserMenuOpen}
+                >
+                  <div className="avatar">{user?.name ? getInitials(user.name) : '?'}</div>
+                  <div className="user-details">
+                    <span className="user-name">{user?.name}</span>
+                    {user?.role === 'ADMIN' && <span className="user-role">Admin</span>}
+                  </div>
+                  {user?.role !== 'ADMIN' && <span className="user-chevron">▾</span>}
+                </button>
+                {user?.role !== 'ADMIN' && (
+                  <div className={`user-dropdown ${isUserMenuOpen ? 'open' : ''}`} role="menu">
+                    <Link
+                      to="/orders"
+                      className="user-dropdown-link"
+                      role="menuitem"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <span>📦</span>
+                      <span>Pedidos</span>
+                    </Link>
+                    <Link
+                      to="/perfil"
+                      className="user-dropdown-link"
+                      role="menuitem"
+                      onClick={() => setIsUserMenuOpen(false)}
+                    >
+                      <span>👤</span>
+                      <span>Perfil</span>
+                    </Link>
+                  </div>
+                )}
               </div>
-              <button onClick={logout} className="logout-btn" title="Sair">
+              <button onClick={handleLogout} className="logout-btn" title="Sair">
                 🚪
               </button>
             </>
@@ -94,15 +182,16 @@ export default function Home() {
       </header>
 
       <main className="home-main">
-        {/* Hero Section */}
         <section className="hero">
+          <div className="hero-glow hero-glow-a" aria-hidden="true"></div>
+          <div className="hero-glow hero-glow-b" aria-hidden="true"></div>
+          <div className="hero-grid" aria-hidden="true"></div>
           <div className="hero-content">
             <h2>Encontre os melhores produtos</h2>
             <p>Qualidade e preço justo em um só lugar</p>
           </div>
         </section>
 
-        {/* Products Section */}
         <section className="products-section">
           <h3 className="section-title">🔥 Produtos em destaque</h3>
           
@@ -116,14 +205,23 @@ export default function Home() {
               <p>{error}</p>
               <button onClick={loadProducts} className="btn-retry">Tentar novamente</button>
             </div>
-          ) : products.length === 0 ? (
+          ) : filteredProducts.length === 0 ? (
             <div className="empty-state">
               <span className="empty-icon">📦</span>
-              <p>Nenhum produto disponível no momento</p>
+              <p>
+                {searchTerm.trim()
+                  ? `Nenhum produto encontrado para "${searchTerm}"`
+                  : 'Nenhum produto disponível no momento'}
+              </p>
+              {searchTerm.trim() && (
+                <button onClick={() => setSearchTerm('')} className="btn-retry">
+                  Limpar busca
+                </button>
+              )}
             </div>
           ) : (
             <div className="products-grid">
-              {products.map((product) => (
+              {filteredProducts.map((product) => (
                 <div key={product.id} className="product-card">
                   <div className="product-image">
                     {product.imageUrl ? (
@@ -149,6 +247,7 @@ export default function Home() {
                     <button 
                       className="btn-add-cart" 
                       disabled={product.stock === 0}
+                      onClick={() => handleAddToCart(product)}
                     >
                       {product.stock > 0 ? '🛒 Adicionar ao carrinho' : 'Indisponível'}
                     </button>

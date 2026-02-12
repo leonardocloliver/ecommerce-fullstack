@@ -110,14 +110,14 @@ describe('Stock Management', () => {
     expect(response.status).toBe(201);
     expect(response.body.id).toBeDefined();
 
-    // Verificar que o stock NÃO foi decrementado na criação (apenas em CONFIRMED)
+    // Verificar que o stock FOI decrementado na criação
     const updatedProduct = await prisma.product.findUnique({
       where: { id: product.id },
     });
-    expect(updatedProduct?.stock).toBe(10);
+    expect(updatedProduct?.stock).toBe(7); // 10 - 3
   });
 
-  it('deve decrementar stock ao confirmar pedido', async () => {
+  it('deve manter stock ao confirmar pedido (já descontado na criação)', async () => {
     // Criar usuário
     const user = await prisma.user.create({
       data: {
@@ -166,11 +166,11 @@ describe('Stock Management', () => {
 
     expect(confirmResponse.status).toBe(200);
 
-    // Verificar que o stock foi decrementado
+    // Verificar que o stock permanece o mesmo (já descontado na criação)
     const updatedProduct = await prisma.product.findUnique({
       where: { id: product.id },
     });
-    expect(updatedProduct?.stock).toBe(7); // 10 - 3
+    expect(updatedProduct?.stock).toBe(7); // 10 - 3 (descontado na criação)
   });
 
   it('deve retornar stock ao cancelar pedido confirmado', async () => {
@@ -220,11 +220,11 @@ describe('Stock Management', () => {
         status: 'CONFIRMED',
       });
 
-    // Verificar stock após confirmação
+    // Verificar stock após confirmação (já descontado na criação)
     let updatedProduct = await prisma.product.findUnique({
       where: { id: product.id },
     });
-    expect(updatedProduct?.stock).toBe(3); // 5 - 2
+    expect(updatedProduct?.stock).toBe(3); // 5 - 2 (descontado na criação)
 
     // Cancelar pedido
     await request(app)

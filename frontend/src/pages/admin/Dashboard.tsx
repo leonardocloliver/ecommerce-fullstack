@@ -30,12 +30,24 @@ export default function Dashboard() {
       const products = productsRes.data;
       
       // Carregar pedidos
-      const ordersRes = await api.get('/api/orders');
+      const ordersRes = await api.get('/api/orders/admin');
       const orders = ordersRes.data;
 
       // Calcular estatísticas
-      const totalRevenue = orders.reduce((sum: number, order: { total: number }) => sum + order.total, 0);
-      const lowStockProducts = products.filter((p: { stock: number }) => p.stock < 5).length;
+      const revenueStatuses = new Set(['CONFIRMED', 'SHIPPED', 'DELIVERED']);
+      const totalRevenue = orders.reduce(
+        (sum: number, order: { total: number | string; status: string }) => {
+          if (!revenueStatuses.has(order.status)) {
+            return sum;
+          }
+          return sum + Number(order.total);
+        },
+        0
+      );
+      const lowStockProducts = products.filter((p: { stock: number | string }) => {
+        const stock = Number(p.stock);
+        return Number.isFinite(stock) && stock < 5;
+      }).length;
 
       setStats({
         totalProducts: products.length,

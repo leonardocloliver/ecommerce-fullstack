@@ -2,6 +2,7 @@ import { Router } from 'express';
 import jwt from 'jsonwebtoken';
 import bcrypt from 'bcrypt';
 import { PrismaClient } from '@prisma/client';
+import { authMiddleware } from '../middleware/auth.js';
 import { AppError, asyncHandler } from '../middleware/errorHandler.js';
 
 const router = Router();
@@ -57,7 +58,7 @@ const prisma = new PrismaClient();
  *               $ref: '#/components/schemas/Error'
  */
 router.post('/register', asyncHandler(async (req, res) => {
-  const { email, password, name } = req.body;
+  const { email, password, name, address } = req.body;
 
   //Validação de campos obrigatórios
   if (!email || !password || !name) {
@@ -80,17 +81,20 @@ router.post('/register', asyncHandler(async (req, res) => {
 
   //Criar novo usuário com senha hasheada
   const hashedPassword = await bcrypt.hash(password, 10);
+  const normalizedAddress = typeof address === 'string' ? address.trim() : '';
   const user = await prisma.user.create({
     data: {
       email,
       password: hashedPassword,
       name,
+      address: normalizedAddress || null,
     },
     select: {
       id: true,
       email: true,
       name: true,
       role: true,
+      address: true,
     },
   });
 
@@ -179,8 +183,63 @@ router.post('/login', asyncHandler(async (req, res) => {
       email: user.email,
       name: user.name,
       role: user.role,
-      },
-    });
+      address: user.address,
+    },
+  });
+}));
+
+router.get('/me', authMiddleware, asyncHandler(async (req, res) => {
+  const userId = req.userId as string;
+
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      address: true,
+    },
+  });
+
+  if (!user) {
+    throw new AppError(404, 'Usuário não encontrado');
+  }
+
+  return res.status(200).json(user);
+}));
+
+router.put('/profile', authMiddleware, asyncHandler(async (req, res) => {
+  const userId = req.userId as string;
+  const { address, name } = req.body;
+
+  if (address === undefined && name === undefined) {
+    throw new AppError(400, 'Nome ou endereço é obrigatório');
+  }
+
+  const normalizedAddress = typeof address === 'string' ? address.trim() : '';
+  const normalizedName = typeof name === 'string' ? name.trim() : '';
+
+  if (name !== undefined && !normalizedName) {
+    throw new AppError(400, 'Nome é obrigatório');
+  }
+
+  const user = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      ...(address !== undefined ? { address: normalizedAddress || null } : {}),
+      ...(name !== undefined ? { name: normalizedName } : {}),
+    },
+    select: {
+      id: true,
+      email: true,
+      name: true,
+      role: true,
+      address: true,
+    },
+  });
+
+  return res.status(200).json(user);
 }));
 
 export default router;

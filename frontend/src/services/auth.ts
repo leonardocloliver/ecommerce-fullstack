@@ -5,6 +5,7 @@ export interface User {
   email: string;
   name: string;
   role: 'USER' | 'ADMIN';
+  address?: string | null;
 }
 
 export interface LoginData {
@@ -23,6 +24,11 @@ export interface AuthResponse {
   token: string;
 }
 
+export interface UpdateProfileData {
+  address?: string;
+  name?: string;
+}
+
 export const authService = {
   async login(data: LoginData): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/api/auth/login', data);
@@ -31,6 +37,11 @@ export const authService = {
 
   async register(data: RegisterData): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/api/auth/register', data);
+    return response.data;
+  },
+
+  async updateProfile(data: UpdateProfileData): Promise<User> {
+    const response = await api.put<User>('/api/auth/profile', data);
     return response.data;
   },
 
@@ -51,5 +62,9 @@ export const authService = {
   saveAuth(auth: AuthResponse) {
     localStorage.setItem('token', auth.token);
     localStorage.setItem('user', JSON.stringify(auth.user));
+  },
+
+  saveUser(user: User) {
+    localStorage.setItem('user', JSON.stringify(user));
   },
 };

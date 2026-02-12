@@ -130,6 +130,9 @@ export default function AdminProducts() {
           <h1>Produtos</h1>
           <p>Gerencie os produtos da sua loja</p>
         </div>
+        <button onClick={openCreateModal} className="btn-primary">
+          ➕ Novo Produto
+        </button>
       </div>
 
       {products.length === 0 ? (

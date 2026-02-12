@@ -10,10 +10,7 @@ declare global {
   }
 }
 
-/**
- Middleware de autenticação JWT
- Valida o token e extrai o userId para usar nas rotas
- */
+//Valida o token e extrai o userId para usar nas rotas
 export const authMiddleware = (req: Request, res: Response, next: NextFunction) => {
   try {
     //Pega o header Authorization
@@ -25,7 +22,7 @@ export const authMiddleware = (req: Request, res: Response, next: NextFunction) 
       });
     }
 
-    //Valida formato "Bearer TOKEN"
+    //Valida formato do token
     const parts = authHeader.split(' ');
     if (parts.length !== 2 || parts[0] !== 'Bearer') {
       return res.status(401).json({ 

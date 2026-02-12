@@ -1,22 +1,22 @@
 import { Router } from 'express';
 import { PrismaClient } from '@prisma/client';
+import type { Prisma } from '@prisma/client';
 import { authMiddleware } from '../middleware/auth.js';
+import { adminMiddleware } from '../middleware/adminMiddleware.js';
 import { AppError, asyncHandler } from '../middleware/errorHandler.js';
 
 const router = Router();
 const prisma = new PrismaClient();
 
-// Criar um novo pedido
+//Criar um novo pedido
 router.post('/', authMiddleware, asyncHandler(async (req, res) => {
   const userId = req.userId as string;  // Vem do middleware
   const { address, items } = req.body;
 
-  // Validação de campos obrigatórios
   if (!userId || !address || !items || items.length === 0) {
     throw new AppError(400, 'userId, address e items são obrigatórios');
   }
 
-  // Verificar se usuário existe
   const user = await prisma.user.findUnique({
     where: { id: userId },
   });
@@ -25,45 +25,55 @@ router.post('/', authMiddleware, asyncHandler(async (req, res) => {
     throw new AppError(404, 'Usuário não encontrado');
   }
 
-  // Validar stock de todos os produtos
-  for (const item of items) {
-    const product = await prisma.product.findUnique({
-      where: { id: item.productId },
+  // Criar pedido com transação para garantir consistência do estoque
+  const order = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
+    let total = 0;
+    const itemsData: { productId: string; quantity: number; price: number }[] = [];
+
+    for (const item of items) {
+      const product = await tx.product.findUnique({
+        where: { id: item.productId },
+      });
+
+      if (!product) {
+        throw new AppError(404, `Produto com ID '${item.productId}' não encontrado`);
+      }
+
+      if (product.stock < item.quantity) {
+        throw new AppError(400, `Estoque insuficiente para '${product.name}'. Disponível: ${product.stock}, Solicitado: ${item.quantity}`);
+      }
+
+      const price = Number(product.price);
+      total += price * item.quantity;
+      itemsData.push({
+        productId: item.productId,
+        quantity: item.quantity,
+        price,
+      });
+
+      // Descontar estoque imediatamente
+      await tx.product.update({
+        where: { id: item.productId },
+        data: { stock: { decrement: item.quantity } },
+      });
+    }
+
+    const createdOrder = await tx.order.create({
+      data: {
+        userId,
+        address,
+        total,
+        status: 'PENDING',
+        items: {
+          create: itemsData,
+        },
+      },
+      include: {
+        items: true,
+      },
     });
 
-    if (!product) {
-      throw new AppError(404, `Produto com ID '${item.productId}' não encontrado`);
-    }
-
-    if (product.stock < item.quantity) {
-      throw new AppError(400, `Estoque insuficiente para '${product.name}'. Disponível: ${product.stock}, Solicitado: ${item.quantity}`);
-    }
-  }
-
-  // Calcular total do pedido
-  let total = 0;
-  for (const item of items) {
-    total += item.price * item.quantity;
-  }
-
-  // Criar pedido
-  const order = await prisma.order.create({
-    data: {
-      userId,
-      address,
-      total,
-      status: 'PENDING',
-      items: {
-        create: items.map((item: any) => ({
-          productId: item.productId,
-          quantity: item.quantity,
-          price: item.price,
-        })),
-      },
-    },
-    include: {
-      items: true,
-    },
+    return createdOrder;
   });
 
   return res.status(201).json(order);
@@ -89,6 +99,34 @@ router.get('/', authMiddleware, asyncHandler(async (req, res) => {
         },
       },
     },
+  });
+
+  return res.status(200).json(orders);
+}));
+
+// Listar todos os pedidos (apenas ADMIN)
+router.get('/admin', authMiddleware, adminMiddleware, asyncHandler(async (req, res) => {
+  const orders = await prisma.order.findMany({
+    include: {
+      user: {
+        select: {
+          name: true,
+          email: true,
+        },
+      },
+      items: {
+        include: {
+          product: {
+            select: {
+              id: true,
+              name: true,
+              description: true,
+            },
+          },
+        },
+      },
+    },
+    orderBy: { createdAt: 'desc' },
   });
 
   return res.status(200).json(orders);
@@ -145,7 +183,16 @@ router.put('/:id', authMiddleware, asyncHandler(async (req, res) => {
   }
 
   // Verificar permissão
-  if (order.userId !== userId) {
+  const requester = await prisma.user.findUnique({
+    where: { id: userId },
+    select: { role: true },
+  });
+
+  if (!requester) {
+    throw new AppError(404, 'Usuário não encontrado');
+  }
+
+  if (requester.role !== 'ADMIN' && order.userId !== userId) {
     throw new AppError(403, 'Você não tem permissão para atualizar este pedido');
   }
 
@@ -166,25 +213,28 @@ router.put('/:id', authMiddleware, asyncHandler(async (req, res) => {
     throw new AppError(400, 'Status inválido');
   }
 
-  // CANCELLED é um status especial que pode ser acionado de qualquer estado
+  // Cancelamento: restaurar estoque (de qualquer status exceto DELIVERED e já CANCELLED)
   if (status === 'CANCELLED') {
-    // Se o pedido foi confirmado, retornar o stock
-    if (order.status === 'CONFIRMED' || order.status === 'SHIPPED') {
-      const orderItems = await prisma.orderItem.findMany({
-        where: { orderId: id },
-      });
+    if (order.status === 'CANCELLED') {
+      throw new AppError(400, 'Pedido já está cancelado');
+    }
 
-      //Retornar stock de cada item
-      for (const item of orderItems) {
-        await prisma.product.update({
-          where: { id: item.productId },
-          data: {
-            stock: {
-              increment: item.quantity,
-            },
-          },
-        });
-      }
+    if (order.status === 'DELIVERED') {
+      throw new AppError(400, 'Pedido já entregue não pode ser cancelado');
+    }
+
+    // Restaurar estoque de cada item
+    const orderItems = await prisma.orderItem.findMany({
+      where: { orderId: id },
+    });
+
+    for (const item of orderItems) {
+      await prisma.product.update({
+        where: { id: item.productId },
+        data: {
+          stock: { increment: item.quantity },
+        },
+      });
     }
 
     const updatedOrder = await prisma.order.update({
@@ -222,24 +272,7 @@ router.put('/:id', authMiddleware, asyncHandler(async (req, res) => {
     throw new AppError(400, `Transição inválida: não é permitido pular de '${currentStatus}' para '${status}'. O próximo status deve ser '${nextStatus}'.`);
   }
 
-  //Ao confirmar pedido, decrementar stock
-  if (status === 'CONFIRMED' && order.status === 'PENDING') {
-    const orderItems = await prisma.orderItem.findMany({
-      where: { orderId: id },
-    });
-
-    //Decrementar stock de cada item
-    for (const item of orderItems) {
-      await prisma.product.update({
-        where: { id: item.productId },
-        data: {
-          stock: {
-            decrement: item.quantity,
-          },
-        },
-      });
-    }
-  }
+  // Estoque já descontado na criação — não precisa descontar na confirmação
 
   //Atualizar pedido
   const updatedOrder = await prisma.order.update({

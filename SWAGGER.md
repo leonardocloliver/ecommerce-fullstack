@@ -66,33 +66,6 @@ http://localhost:3000/api-docs
 
 ---
 
-## 📚 Estrutura da Documentação
-
-```yaml
-OpenAPI 3.0.0
-├── Info
-│   ├── title: E-Commerce API
-│   ├── version: 1.0.0
-│   └── description: API RESTful...
-│
-├── Servers
-│   ├── Development (localhost:3000)
-│   └── Production (api.example.com)
-│
-├── Components
-│   ├── Security (Bearer Auth)
-│   └── Schemas (User, Product, Order, Error)
-│
-└── Paths (Endpoints)
-    ├── /api/auth/register (POST)
-    ├── /api/auth/login (POST)
-    ├── /api/products (GET, POST)
-    ├── /api/products/{id} (GET, PUT, DELETE)
-    └── /api/orders (...)
-```
-
----
-
 ## 🔒 Segurança
 
 - ✅ JWT Bearer Token configurado

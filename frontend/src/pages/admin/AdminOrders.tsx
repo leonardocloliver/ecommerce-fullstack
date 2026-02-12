@@ -36,7 +36,7 @@ export default function AdminOrders() {
 
   const loadOrders = async () => {
     try {
-      const response = await api.get('/api/orders');
+      const response = await api.get('/api/orders/admin');
       setOrders(response.data);
     } catch (err) {
       console.error('Erro ao carregar pedidos:', err);
@@ -65,7 +65,7 @@ export default function AdminOrders() {
   const getStatusInfo = (status: string) => {
     const statusMap: Record<string, { label: string; class: string }> = {
       PENDING: { label: 'Pendente', class: 'pending' },
-      PROCESSING: { label: 'Processando', class: 'processing' },
+      CONFIRMED: { label: 'Confirmado', class: 'confirmed' },
       SHIPPED: { label: 'Enviado', class: 'shipped' },
       DELIVERED: { label: 'Entregue', class: 'delivered' },
       CANCELLED: { label: 'Cancelado', class: 'cancelled' },
@@ -75,7 +75,7 @@ export default function AdminOrders() {
 
   const handleStatusChange = async (orderId: string, newStatus: string) => {
     try {
-      await api.patch(`/api/orders/${orderId}/status`, { status: newStatus });
+      await api.put(`/api/orders/${orderId}`, { status: newStatus });
       await loadOrders();
     } catch (err) {
       console.error('Erro ao atualizar status:', err);
@@ -177,7 +177,7 @@ export default function AdminOrders() {
                         className="status-select"
                       >
                         <option value="PENDING">Pendente</option>
-                        <option value="PROCESSING">Processando</option>
+                        <option value="CONFIRMED">Confirmado</option>
                         <option value="SHIPPED">Enviado</option>
                         <option value="DELIVERED">Entregue</option>
                         <option value="CANCELLED">Cancelado</option>
